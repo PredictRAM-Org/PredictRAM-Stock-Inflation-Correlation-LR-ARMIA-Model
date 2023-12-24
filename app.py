@@ -67,20 +67,32 @@ def analyze_stock(stock_data, cpi_data, expected_inflation):
 st.title("Stock-CPI Correlation Analysis with Expected Inflation and Price Prediction")
 
 # Date range selector for CPI data
-cpi_start_date = st.date_input("Select Start Date for CPI Data:", min_value=cpi_data.index.min(), max_value=cpi_data.index.max())
-cpi_end_date = st.date_input("Select End Date for CPI Data:", min_value=cpi_data.index.min(), max_value=cpi_data.index.max())
+cpi_end_date = pd.to_datetime("Nov 2023")  # Set the end date as the latest date in your data
+
+# Options to select a fixed date range
+date_range_options = {
+    "Last One Month": cpi_end_date - pd.DateOffset(months=1),
+    "Last 3 Months": cpi_end_date - pd.DateOffset(months=3),
+    "Last 6 Months": cpi_end_date - pd.DateOffset(months=6),
+    "Last 1 Year": cpi_end_date - pd.DateOffset(years=1),
+    "Last 2 Years": cpi_end_date - pd.DateOffset(years=2),
+    "Last 5 Years": cpi_end_date - pd.DateOffset(years=5),
+}
+
+selected_date_range = st.selectbox("Select Fixed Date Range for Training Data:", list(date_range_options.keys()))
+
+# Calculate start date based on the selected date range
+cpi_start_date = date_range_options[selected_date_range]
 
 # Date range selector for stock data
-stock_start_date = st.date_input("Select Start Date for Stock Data:", min_value=min([pd.read_excel(os.path.join(stock_folder, stock_file))['Date'].min() for stock_file in stock_files]),
-                                 max_value=max([pd.read_excel(os.path.join(stock_folder, stock_file))['Date'].max() for stock_file in stock_files]))
-stock_end_date = st.date_input("Select End Date for Stock Data:", min_value=min([pd.read_excel(os.path.join(stock_folder, stock_file))['Date'].min() for stock_file in stock_files]),
-                               max_value=max([pd.read_excel(os.path.join(stock_folder, stock_file))['Date'].max() for stock_file in stock_files]))
+stock_start_date = st.date_input("Select Start Date for Stock Data:", min_value=cpi_data.index.min(), max_value=cpi_data.index.max())
+stock_end_date = st.date_input("Select End Date for Stock Data:", min_value=cpi_data.index.min(), max_value=cpi_data.index.max())
 
 expected_inflation = st.number_input("Enter Expected Upcoming Inflation:", min_value=0.0, step=0.01)
 train_model_button = st.button("Train Model")
 
 if train_model_button:
-    st.write(f"Training model with Expected Inflation: {expected_inflation} and selected date ranges for all stocks...")
+    st.write(f"Training model with Expected Inflation: {expected_inflation} and selected date ranges...")
 
     actual_correlations = []
     expected_correlations = []
