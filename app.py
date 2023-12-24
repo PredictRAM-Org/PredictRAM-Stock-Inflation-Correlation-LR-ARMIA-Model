@@ -4,7 +4,6 @@ import streamlit as st
 from sklearn.linear_model import LinearRegression
 from pmdarima import auto_arima
 import matplotlib.pyplot as plt
-import seaborn as sns
 
 # Load CPI data
 cpi_data = pd.read_excel("CPI.xlsx")
@@ -70,8 +69,9 @@ st.title("Stock-CPI Correlation Analysis with Expected Inflation and Price Predi
 expected_inflation = st.number_input("Enter Expected Upcoming Inflation:", min_value=0.0, step=0.01)
 
 # Date selectors
-start_date = st.date_input("Select Start Date", min_value=cpi_data.index.min(), max_value=cpi_data.index.max())
-end_date = st.date_input("Select End Date", min_value=start_date, max_value=cpi_data.index.max(), value=cpi_data.index.max())
+st.sidebar.title("Date Range Selection")
+start_date = st.sidebar.date_input("Select Start Date", min_value=cpi_data.index.min(), max_value=cpi_data.index.max())
+end_date = st.sidebar.date_input("Select End Date", min_value=start_date, max_value=cpi_data.index.max(), value=cpi_data.index.max())
 
 train_model_button = st.button("Train Model")
 
