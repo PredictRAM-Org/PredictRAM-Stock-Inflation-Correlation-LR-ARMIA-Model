@@ -3,6 +3,8 @@ import pandas as pd
 import streamlit as st
 from sklearn.linear_model import LinearRegression
 from pmdarima import auto_arima
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 # Load CPI data
 cpi_data = pd.read_excel("CPI.xlsx")
@@ -65,35 +67,29 @@ def analyze_stock(stock_data, cpi_data, expected_inflation):
 
 # Streamlit UI
 st.title("Stock-CPI Correlation Analysis with Expected Inflation and Price Prediction")
-
-# Date range selector for CPI data
-cpi_end_date = pd.to_datetime("Nov 2023")  # Set the end date as the latest date in your data
-
-# Options to select a fixed date range
-date_range_options = {
-    "Last One Month": cpi_end_date - pd.DateOffset(months=1),
-    "Last 3 Months": cpi_end_date - pd.DateOffset(months=3),
-    "Last 6 Months": cpi_end_date - pd.DateOffset(months=6),
-    "Last 1 Year": cpi_end_date - pd.DateOffset(years=1),
-    "Last 2 Years": cpi_end_date - pd.DateOffset(years=2),
-    "Last 5 Years": cpi_end_date - pd.DateOffset(years=5),
-}
-
-selected_date_range = st.selectbox("Select Fixed Date Range for Training Data:", list(date_range_options.keys()))
-
-# Calculate start date based on the selected date range
-cpi_start_date = date_range_options[selected_date_range]
-
-# Date range selector for stock data
-stock_start_date = st.date_input("Select Start Date for Stock Data:", min_value=cpi_data.index.min(), max_value=cpi_end_date)
-stock_end_date = st.date_input("Select End Date for Stock Data:", min_value=cpi_data.index.min(), max_value=cpi_end_date)
-
 expected_inflation = st.number_input("Enter Expected Upcoming Inflation:", min_value=0.0, step=0.01)
+
+# Select tenure for training the model
+tenure_options = ['1 month', '3 months', '6 months', '1 year', '3 years', '5 years']
+selected_tenure = st.selectbox("Select Tenure for Training Model:", tenure_options)
+
+# Convert tenure to timedelta for filtering data
+tenure_mapping = {'1 month': pd.DateOffset(months=1),
+                  '3 months': pd.DateOffset(months=3),
+                  '6 months': pd.DateOffset(months=6),
+                  '1 year': pd.DateOffset(years=1),
+                  '3 years': pd.DateOffset(years=3),
+                  '5 years': pd.DateOffset(years=5)}
+
+selected_tenure_offset = tenure_mapping[selected_tenure]
+end_date = pd.to_datetime("2023-11-30")  # Training till November 2023
+start_date = end_date - selected_tenure_offset
+
 train_model_button = st.button("Train Model")
 
 if train_model_button:
-    st.write(f"Training model with Expected Inflation: {expected_inflation} and selected date ranges...")
-
+    st.write(f"Training model with Expected Inflation: {expected_inflation} and Tenure: {selected_tenure}...")
+    
     actual_correlations = []
     expected_correlations = []
     future_prices_lr_list = []
@@ -105,13 +101,12 @@ if train_model_button:
         st.write(f"\nTraining for {stock_file}...")
         selected_stock_data = pd.read_excel(os.path.join(stock_folder, stock_file))
         selected_stock_data.name = stock_file  # Assign a name to the stock_data for reference
-
-        # Filter data based on selected date ranges
-        selected_stock_data = selected_stock_data[(selected_stock_data['Date'] >= stock_start_date) & (selected_stock_data['Date'] <= stock_end_date)]
-        selected_cpi_data = cpi_data[(cpi_data.index >= cpi_start_date) & (cpi_data.index <= cpi_end_date)]
-
-        actual_corr, expected_corr, future_price_lr, future_price_arima, latest_actual_price = analyze_stock(selected_stock_data, selected_cpi_data, expected_inflation)
-
+        
+        # Filter stock data based on selected tenure
+        selected_stock_data = selected_stock_data[(selected_stock_data['Date'] >= start_date) & (selected_stock_data['Date'] <= end_date)]
+        
+        actual_corr, expected_corr, future_price_lr, future_price_arima, latest_actual_price = analyze_stock(selected_stock_data, cpi_data, expected_inflation)
+        
         actual_correlations.append(actual_corr)
         expected_correlations.append(expected_corr)
         future_prices_lr_list.append(future_price_lr)
