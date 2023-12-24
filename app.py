@@ -34,13 +34,15 @@ def analyze_stock(stock_data, cpi_data, expected_inflation):
 
     # Show correlation between 'Close' column and 'CPI Change'
     correlation_close_cpi = merged_data['Close'].corr(merged_data['CPI Change'])
-    
+    correlation_actual = merged_data['Close'].corr(merged_data['CPI'])
+
     stock_name = getattr(stock_data, 'name', None)
     if stock_name is None:
         # Use file name as a fallback if 'name' attribute is not available
         stock_name = os.path.basename(stock_file)
 
     st.write(f"Correlation between 'Close' and 'CPI Change' for {stock_name}: {correlation_close_cpi}")
+    st.write(f"Actual Correlation between 'Close' and 'CPI' for {stock_name}: {correlation_actual}")
 
     # Train Linear Regression model
     model_lr = LinearRegression()
@@ -70,19 +72,17 @@ st.title("Stock-CPI Correlation Analysis with Expected Inflation and Price Predi
 expected_inflation = st.number_input("Enter Expected Upcoming Inflation:", min_value=0.0, step=0.01)
 
 # Select tenure for training the model
-tenure_options = ['1 month', '3 months', '6 months', '1 year', '3 years', '5 years']
+tenure_options = ['1 year', '3 years', '5 years', '10 years']
 selected_tenure = st.selectbox("Select Tenure for Training Model:", tenure_options)
 
 # Convert tenure to timedelta for filtering data
-tenure_mapping = {'1 month': pd.DateOffset(months=1),
-                  '3 months': pd.DateOffset(months=3),
-                  '6 months': pd.DateOffset(months=6),
-                  '1 year': pd.DateOffset(years=1),
+tenure_mapping = {'1 year': pd.DateOffset(years=1),
                   '3 years': pd.DateOffset(years=3),
-                  '5 years': pd.DateOffset(years=5)}
+                  '5 years': pd.DateOffset(years=5),
+                  '10 years': pd.DateOffset(years=10)}
 
 selected_tenure_offset = tenure_mapping[selected_tenure]
-end_date = pd.to_datetime("2023-11-30")  # Training till November 2023
+end_date = pd.to_datetime("2023-11-01")  # Last date available in the data
 start_date = end_date - selected_tenure_offset
 
 train_model_button = st.button("Train Model")
