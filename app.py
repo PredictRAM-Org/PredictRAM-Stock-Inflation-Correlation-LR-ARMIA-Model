@@ -3,8 +3,6 @@ import pandas as pd
 import streamlit as st
 from sklearn.linear_model import LinearRegression
 from pmdarima import auto_arima
-import matplotlib.pyplot as plt
-import seaborn as sns
 
 # Load CPI data
 cpi_data = pd.read_excel("CPI.xlsx")
@@ -36,11 +34,13 @@ def analyze_stock(stock_data, cpi_data, expected_inflation):
 
     # Show correlation between 'Close' column and 'CPI Change'
     correlation_close_cpi = merged_data['Close'].corr(merged_data['CPI Change'])
-    st.write(f"Correlation between 'Close' and 'CPI Change' for {stock_data.name}: {correlation_close_cpi}")
+    
+    stock_name = getattr(stock_data, 'name', None)
+    if stock_name is None:
+        # Use file name as a fallback if 'name' attribute is not available
+        stock_name = os.path.basename(stock_file)
 
-    # Calculate the adjusted correlation based on expected inflation impact
-    adjusted_correlation = correlation_close_cpi + 0.1 * expected_inflation  # You can adjust the multiplier as needed
-    st.write(f"Adjusted Correlation with Expected Inflation ({expected_inflation}): {adjusted_correlation}")
+    st.write(f"Correlation between 'Close' and 'CPI Change' for {stock_name}: {correlation_close_cpi}")
 
     # Train Linear Regression model
     model_lr = LinearRegression()
@@ -61,9 +61,9 @@ def analyze_stock(stock_data, cpi_data, expected_inflation):
 
     # Display the latest actual price
     latest_actual_price = merged_data['Close'].iloc[-1]
-    st.write(f"Latest Actual Price for {stock_data.name}: {latest_actual_price}")
+    st.write(f"Latest Actual Price for {stock_name}: {latest_actual_price}")
 
-    return correlation_close_cpi, adjusted_correlation, future_prices_lr[0], future_prices_arima, latest_actual_price
+    return correlation_close_cpi, future_prices_lr[0], future_prices_arima, latest_actual_price
 
 # Streamlit UI
 st.title("Stock-CPI Correlation Analysis with Expected Inflation and Price Prediction")
@@ -90,8 +90,7 @@ train_model_button = st.button("Train Model")
 if train_model_button:
     st.write(f"Training model with Expected Inflation: {expected_inflation} and Tenure: {selected_tenure}...")
     
-    actual_correlations = []
-    expected_correlations = []
+    correlations = []
     future_prices_lr_list = []
     future_prices_arima_list = []
     latest_actual_prices = []
@@ -105,10 +104,9 @@ if train_model_button:
         # Filter stock data based on selected tenure
         selected_stock_data = selected_stock_data[(selected_stock_data['Date'] >= start_date) & (selected_stock_data['Date'] <= end_date)]
         
-        actual_corr, expected_corr, future_price_lr, future_price_arima, latest_actual_price = analyze_stock(selected_stock_data, cpi_data, expected_inflation)
+        correlation_close_cpi, future_price_lr, future_price_arima, latest_actual_price = analyze_stock(selected_stock_data, cpi_data, expected_inflation)
         
-        actual_correlations.append(actual_corr)
-        expected_correlations.append(expected_corr)
+        correlations.append(correlation_close_cpi)
         future_prices_lr_list.append(future_price_lr)
         future_prices_arima_list.append(future_price_arima)
         latest_actual_prices.append(latest_actual_price)
@@ -117,8 +115,7 @@ if train_model_button:
     # Display overall summary in a table
     summary_data = {
         'Stock': stock_names,
-        'Actual Correlation': actual_correlations,
-        f'Expected Correlation (Inflation={expected_inflation})': expected_correlations,
+        'Correlation with CPI Change': correlations,
         'Predicted Price Change (Linear Regression)': future_prices_lr_list,
         'Predicted Price Change (ARIMA)': future_prices_arima_list,
         'Latest Actual Price': latest_actual_prices
