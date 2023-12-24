@@ -69,9 +69,6 @@ def analyze_stock(stock_data, cpi_data, expected_inflation):
 st.title("Stock-CPI Correlation Analysis with Expected Inflation and Price Prediction")
 expected_inflation = st.number_input("Enter Expected Upcoming Inflation:", min_value=0.0, step=0.01)
 
-# Select the latest date for training
-latest_date = st.date_input("Select the Latest Date for Training:", max_value=pd.to_datetime("2023-11-30"))
-
 # Select tenure for training the model
 tenure_options = ['1 month', '3 months', '6 months', '1 year', '3 years', '5 years']
 selected_tenure = st.selectbox("Select Tenure for Training Model:", tenure_options)
@@ -85,12 +82,13 @@ tenure_mapping = {'1 month': pd.DateOffset(months=1),
                   '5 years': pd.DateOffset(years=5)}
 
 selected_tenure_offset = tenure_mapping[selected_tenure]
-start_date = latest_date - selected_tenure_offset
+end_date = pd.to_datetime("2023-11-30")  # Training till November 2023
+start_date = end_date - selected_tenure_offset
 
 train_model_button = st.button("Train Model")
 
 if train_model_button:
-    st.write(f"Training model with Expected Inflation: {expected_inflation}, Latest Date: {latest_date}, and Tenure: {selected_tenure}...")
+    st.write(f"Training model with Expected Inflation: {expected_inflation} and Tenure: {selected_tenure}...")
     
     correlations = []
     future_prices_lr_list = []
@@ -103,8 +101,8 @@ if train_model_button:
         selected_stock_data = pd.read_excel(os.path.join(stock_folder, stock_file))
         selected_stock_data.name = stock_file  # Assign a name to the stock_data for reference
         
-        # Filter stock data based on selected tenure and latest date
-        selected_stock_data = selected_stock_data[(selected_stock_data['Date'] >= start_date) & (selected_stock_data['Date'] <= latest_date)]
+        # Filter stock data based on selected tenure
+        selected_stock_data = selected_stock_data[(selected_stock_data['Date'] >= start_date) & (selected_stock_data['Date'] <= end_date)]
         
         correlation_close_cpi, future_price_lr, future_price_arima, latest_actual_price = analyze_stock(selected_stock_data, cpi_data, expected_inflation)
         
