@@ -3,6 +3,8 @@ import pandas as pd
 import streamlit as st
 from sklearn.linear_model import LinearRegression
 from pmdarima import auto_arima
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 # Load CPI data
 cpi_data = pd.read_excel("CPI.xlsx")
@@ -65,18 +67,23 @@ def analyze_stock(stock_data, cpi_data, expected_inflation):
 
 # Streamlit UI
 st.title("Stock-CPI Correlation Analysis with Expected Inflation and Price Prediction")
+
+# Date range selector for CPI data
+cpi_start_date = st.date_input("Select Start Date for CPI Data:", min_value=cpi_data.index.min(), max_value=cpi_data.index.max())
+cpi_end_date = st.date_input("Select End Date for CPI Data:", min_value=cpi_data.index.min(), max_value=cpi_data.index.max())
+
+# Date range selector for stock data
+stock_start_date = st.date_input("Select Start Date for Stock Data:", min_value=min([pd.read_excel(os.path.join(stock_folder, stock_file))['Date'].min() for stock_file in stock_files]),
+                                 max_value=max([pd.read_excel(os.path.join(stock_folder, stock_file))['Date'].max() for stock_file in stock_files]))
+stock_end_date = st.date_input("Select End Date for Stock Data:", min_value=min([pd.read_excel(os.path.join(stock_folder, stock_file))['Date'].min() for stock_file in stock_files]),
+                               max_value=max([pd.read_excel(os.path.join(stock_folder, stock_file))['Date'].max() for stock_file in stock_files]))
+
 expected_inflation = st.number_input("Enter Expected Upcoming Inflation:", min_value=0.0, step=0.01)
-
-# Date selectors
-st.sidebar.title("Date Range Selection")
-start_date = st.sidebar.date_input("Select Start Date", min(cpi_data.index), max(cpi_data.index))
-end_date = st.sidebar.date_input("Select End Date", min(start_date, max(cpi_data.index)), max(cpi_data.index), value=max(cpi_data.index))
-
 train_model_button = st.button("Train Model")
 
 if train_model_button:
-    st.write(f"Training model with Expected Inflation: {expected_inflation}...")
-    
+    st.write(f"Training model with Expected Inflation: {expected_inflation} and selected date ranges...")
+
     actual_correlations = []
     expected_correlations = []
     future_prices_lr_list = []
@@ -89,11 +96,12 @@ if train_model_button:
         selected_stock_data = pd.read_excel(os.path.join(stock_folder, stock_file))
         selected_stock_data.name = stock_file  # Assign a name to the stock_data for reference
 
-        # Filter data based on selected date range
-        selected_stock_data = selected_stock_data[(selected_stock_data['Date'] >= start_date) & (selected_stock_data['Date'] <= end_date)]
+        # Filter data based on selected date ranges
+        selected_stock_data = selected_stock_data[(selected_stock_data['Date'] >= stock_start_date) & (selected_stock_data['Date'] <= stock_end_date)]
+        selected_cpi_data = cpi_data[(cpi_data.index >= cpi_start_date) & (cpi_data.index <= cpi_end_date)]
 
-        actual_corr, expected_corr, future_price_lr, future_price_arima, latest_actual_price = analyze_stock(selected_stock_data, cpi_data, expected_inflation)
-        
+        actual_corr, expected_corr, future_price_lr, future_price_arima, latest_actual_price = analyze_stock(selected_stock_data, selected_cpi_data, expected_inflation)
+
         actual_correlations.append(actual_corr)
         expected_correlations.append(expected_corr)
         future_prices_lr_list.append(future_price_lr)
