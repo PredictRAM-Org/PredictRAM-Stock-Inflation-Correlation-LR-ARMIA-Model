@@ -68,51 +68,48 @@ st.title("Stock-CPI Correlation Analysis with Expected Inflation and Price Predi
 expected_inflation = st.number_input("Enter Expected Upcoming Inflation:", min_value=0.0, step=0.01)
 
 # Date selectors
-if cpi_data.index.min() is not pd.NaT and cpi_data.index.max() is not pd.NaT:
-    st.sidebar.title("Date Range Selection")
-    start_date = st.sidebar.date_input("Select Start Date", min_value=cpi_data.index.min(), max_value=cpi_data.index.max())
-    end_date = st.sidebar.date_input("Select End Date", min_value=start_date, max_value=cpi_data.index.max(), value=cpi_data.index.max())
+st.sidebar.title("Date Range Selection")
+start_date = st.sidebar.date_input("Select Start Date", min(cpi_data.index), max(cpi_data.index))
+end_date = st.sidebar.date_input("Select End Date", min(start_date, max(cpi_data.index)), max(cpi_data.index), value=max(cpi_data.index))
 
-    train_model_button = st.button("Train Model")
+train_model_button = st.button("Train Model")
 
-    if train_model_button:
-        st.write(f"Training model with Expected Inflation: {expected_inflation}...")
+if train_model_button:
+    st.write(f"Training model with Expected Inflation: {expected_inflation}...")
+    
+    actual_correlations = []
+    expected_correlations = []
+    future_prices_lr_list = []
+    future_prices_arima_list = []
+    latest_actual_prices = []
+    stock_names = []
+
+    for stock_file in stock_files:
+        st.write(f"\nTraining for {stock_file}...")
+        selected_stock_data = pd.read_excel(os.path.join(stock_folder, stock_file))
+        selected_stock_data.name = stock_file  # Assign a name to the stock_data for reference
+
+        # Filter data based on selected date range
+        selected_stock_data = selected_stock_data[(selected_stock_data['Date'] >= start_date) & (selected_stock_data['Date'] <= end_date)]
+
+        actual_corr, expected_corr, future_price_lr, future_price_arima, latest_actual_price = analyze_stock(selected_stock_data, cpi_data, expected_inflation)
         
-        actual_correlations = []
-        expected_correlations = []
-        future_prices_lr_list = []
-        future_prices_arima_list = []
-        latest_actual_prices = []
-        stock_names = []
+        actual_correlations.append(actual_corr)
+        expected_correlations.append(expected_corr)
+        future_prices_lr_list.append(future_price_lr)
+        future_prices_arima_list.append(future_price_arima)
+        latest_actual_prices.append(latest_actual_price)
+        stock_names.append(stock_file)
 
-        for stock_file in stock_files:
-            st.write(f"\nTraining for {stock_file}...")
-            selected_stock_data = pd.read_excel(os.path.join(stock_folder, stock_file))
-            selected_stock_data.name = stock_file  # Assign a name to the stock_data for reference
-
-            # Filter data based on selected date range
-            selected_stock_data = selected_stock_data[(selected_stock_data['Date'] >= start_date) & (selected_stock_data['Date'] <= end_date)]
-
-            actual_corr, expected_corr, future_price_lr, future_price_arima, latest_actual_price = analyze_stock(selected_stock_data, cpi_data, expected_inflation)
-            
-            actual_correlations.append(actual_corr)
-            expected_correlations.append(expected_corr)
-            future_prices_lr_list.append(future_price_lr)
-            future_prices_arima_list.append(future_price_arima)
-            latest_actual_prices.append(latest_actual_price)
-            stock_names.append(stock_file)
-
-        # Display overall summary in a table
-        summary_data = {
-            'Stock': stock_names,
-            'Actual Correlation': actual_correlations,
-            f'Expected Correlation (Inflation={expected_inflation})': expected_correlations,
-            'Predicted Price Change (Linear Regression)': future_prices_lr_list,
-            'Predicted Price Change (ARIMA)': future_prices_arima_list,
-            'Latest Actual Price': latest_actual_prices
-        }
-        summary_df = pd.DataFrame(summary_data)
-        st.write("\nCorrelation and Price Prediction Summary:")
-        st.table(summary_df)
-else:
-    st.warning("No valid date range found in CPI data.")
+    # Display overall summary in a table
+    summary_data = {
+        'Stock': stock_names,
+        'Actual Correlation': actual_correlations,
+        f'Expected Correlation (Inflation={expected_inflation})': expected_correlations,
+        'Predicted Price Change (Linear Regression)': future_prices_lr_list,
+        'Predicted Price Change (ARIMA)': future_prices_arima_list,
+        'Latest Actual Price': latest_actual_prices
+    }
+    summary_df = pd.DataFrame(summary_data)
+    st.write("\nCorrelation and Price Prediction Summary:")
+    st.table(summary_df)
