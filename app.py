@@ -80,7 +80,7 @@ expected_inflation = st.number_input("Enter Expected Upcoming Inflation:", min_v
 train_model_button = st.button("Train Model")
 
 if train_model_button:
-    st.write(f"Training model with Expected Inflation: {expected_inflation} and selected date ranges...")
+    st.write(f"Training model with Expected Inflation: {expected_inflation} and selected date ranges for all stocks...")
 
     actual_correlations = []
     expected_correlations = []
