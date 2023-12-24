@@ -85,8 +85,8 @@ selected_date_range = st.selectbox("Select Fixed Date Range for Training Data:",
 cpi_start_date = date_range_options[selected_date_range]
 
 # Date range selector for stock data
-stock_start_date = st.date_input("Select Start Date for Stock Data:", min_value=cpi_data.index.min(), max_value=cpi_data.index.max())
-stock_end_date = st.date_input("Select End Date for Stock Data:", min_value=cpi_data.index.min(), max_value=cpi_data.index.max())
+stock_start_date = st.date_input("Select Start Date for Stock Data:", min_value=cpi_data.index.min(), max_value=cpi_end_date)
+stock_end_date = st.date_input("Select End Date for Stock Data:", min_value=cpi_data.index.min(), max_value=cpi_end_date)
 
 expected_inflation = st.number_input("Enter Expected Upcoming Inflation:", min_value=0.0, step=0.01)
 train_model_button = st.button("Train Model")
